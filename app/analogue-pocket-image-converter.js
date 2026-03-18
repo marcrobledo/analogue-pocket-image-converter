@@ -574,9 +574,7 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 	let filteredGames = appSettings.getAllGames();
 
 	if (/gb_/.test(currentFiles[0].name)) {
-		filteredGames = filteredGames.filter(game => game.platform === 0);
-	} else if (/gbc_/.test(currentFiles[0].name)) {
-		filteredGames = filteredGames.filter(game => game.platform === 1);
+		filteredGames = filteredGames.filter(game => game.platform === 0 || game.platform === 1);
 	} else if (/gba_/.test(currentFiles[0].name)) {
 		filteredGames = filteredGames.filter(game => game.platform === 2);
 	} else if (/gg_/.test(currentFiles[0].name)) {
