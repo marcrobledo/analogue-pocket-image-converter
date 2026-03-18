@@ -16,6 +16,6 @@ It can be used to customize your Analogue Pocket OS look and feel by changing op
 
 ## License
 
-Released under [MIT License](https://github.com/marcrobledo/analogue-pocket-image-converter?tab=MIT-1-ov-file).
+Released under [MIT License](https://github.com/marcrobledo/analogue-pocket-image-converter?tab=License-1-ov-file).
 
 Note: This is not an official Analogue software.
