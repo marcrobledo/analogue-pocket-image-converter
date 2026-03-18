@@ -620,7 +620,7 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 
 
 const _evtClickImportLibraryThumbnail = function (evt) {
-	document.getElementById('input-file-thumbnail').thumbnailEntry = this;
+	document.getElementById('input-file-thumbnail').pocketImage = this;
 	document.getElementById('input-file-thumbnail').click();
 };
 
@@ -809,20 +809,23 @@ window.addEventListener('load', function (evt) {
 		const mimeType = file.type;
 		if (REGEX_IMAGE_MIMETYPE.test(mimeType)) {
 			const currentLibraryThumbnails = currentFiles[0];
-			const currentLibraryThumbnailEntry = this.thumbnailEntry;
+			const currentPocketImage = this.pocketImage;
 
 			const reader = new FileReader();
 			reader.onload = function (evt) {
 				const img = new Image();
 				img.onload = function () {
-					const newPocketImage = AnaloguePocketImage.fromImage(currentLibraryThumbnailEntry.name, this, currentLibraryThumbnails);
-					currentLibraryThumbnailEntry.pocketImage = newPocketImage;
+					const newPocketImage = AnaloguePocketImage.fromImage(currentPocketImage.name, this, currentLibraryThumbnails);
+					currentPocketImage.width = newPocketImage.width;
+					currentPocketImage.height = newPocketImage.height;
+					currentPocketImage.rawData = newPocketImage.rawData;
+
 
 					const imageData = AnaloguePocketConverter.colorRawToImageData(newPocketImage.rawData);
 
-					currentLibraryThumbnailEntry.canvas.width = newPocketImage.width;
-					currentLibraryThumbnailEntry.canvas.height = newPocketImage.height;
-					currentLibraryThumbnailEntry.canvas.getContext('2d').putImageData(imageData, 0, 0);
+					currentPocketImage.canvas.width = newPocketImage.width;
+					currentPocketImage.canvas.height = newPocketImage.height;
+					currentPocketImage.canvas.getContext('2d').putImageData(imageData, 0, 0);
 				};
 				img.src = evt.target.result;
 			};
