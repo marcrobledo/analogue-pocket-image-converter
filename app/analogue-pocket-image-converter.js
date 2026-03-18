@@ -624,29 +624,6 @@ const _evtClickImportLibraryThumbnail = function (evt) {
 	document.getElementById('input-file-thumbnail').click();
 };
 
-const addLibraryThumbnail = function (entry) {
-	const buttonImportImage = document.createElement('button');
-	buttonImportImage.innerHTML = `<span>Import image</span> ${SVG_ICONS.upload}`;
-	buttonImportImage.addEventListener('click', _evtClickImportLibraryThumbnail.bind(entry));
-	const buttonExportImage = document.createElement('button');
-	buttonExportImage.innerHTML = `<span>Save as image</span> ${SVG_ICONS.download}`;
-	buttonExportImage.addEventListener('click', _evtClickExportImage.bind(entry));
-
-	const cell = document.createElement('div');
-	cell.appendChild(document.createElement('div'));
-	cell.appendChild(document.createElement('div'));
-	cell.appendChild(document.createElement('div'));
-
-	cell.children[0].appendChild(entry.canvas);
-	cell.children[1].innerHTML = entry.crc32.toString(16).padStart(8, '0');
-	cell.children[1].className = 'text-muted mono';
-	cell.children[2].appendChild(buttonImportImage);
-	cell.children[2].appendChild(buttonExportImage);
-
-	document.getElementById('library-thumbnails').appendChild(cell);
-
-	return cell;
-};
 
 
 const _isLibraryThumbnailsOpen = function () {
