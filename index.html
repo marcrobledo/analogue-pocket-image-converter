@@ -91,18 +91,21 @@
 	<div id="preview"><img id="preview-img" /></div>
 
 
-	<dialog id="dialog-add-thumbnail-entry">
-		<form id="form-add-thumbnail-entry" method="dialog">
+	<dialog id="dialog-thumbnail">
+		<form id="form-thumbnail" method="dialog">
 			<div class="row-form">
-				<label for="add-thumbnail-crc32">Game:</label>
-				<select id="add-thumbnail-crc32" name="crc32" required autofocus></select>
+				<label for="select-thumbnail-crc32">Game:</label>
+				<select id="select-thumbnail-crc32" name="crc32" required autofocus></select>
 			</div>
 			<div class="row-form">
-				<label for="add-thumbnail-file">Thumbnail image:</label><br/>
-				<input id="add-thumbnail-file" type="file" name="file" required accept="image/*" />
+				<label for="file-thumbnail">Thumbnail image:</label><br/>
+				<input id="file-thumbnail" type="file" name="file" required accept="image/*" />
 			</div>
+			<!-- <div class="row-form">
+				(alternatively, you can drag and drop an image file or paste directly from clipboard)
+			</div> -->
 			<div class="row-form text-center">
-				<canvas id="add-thumbnail-preview"></canvas>
+				<canvas id="canvas-thumbnail-preview"></canvas>
 			</div>
 			<div class="text-center">
 				<button type="button" onclick="this.form.parentElement.close()">Cancel</button>

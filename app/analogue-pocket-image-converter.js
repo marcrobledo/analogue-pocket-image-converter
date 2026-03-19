@@ -356,13 +356,15 @@ class AnaloguePocketImage {
 		htmlContainer.children[2].className = 'item-buttons';
 		this.htmlContainer = htmlContainer;
 
-		this.canvas.addEventListener('mouseover', function (evt) {
-			document.getElementById('preview-img').src = this.canvas.toDataURL();
-			document.getElementById('preview').style.display = 'block';
-		}.bind(this));
-		this.canvas.addEventListener('mouseout', function (evt) {
-			document.getElementById('preview').style.display = 'none';
-		});
+		if(!library){
+			this.canvas.addEventListener('mouseover', function (evt) {
+				document.getElementById('preview-img').src = this.canvas.toDataURL();
+				document.getElementById('preview').style.display = 'block';
+			}.bind(this));
+			this.canvas.addEventListener('mouseout', function (evt) {
+				document.getElementById('preview').style.display = 'none';
+			});
+		}
 		htmlContainer.children[0].appendChild(this.canvas);
 
 		const textTitle = document.createElement('div');
@@ -384,11 +386,7 @@ class AnaloguePocketImage {
 			const buttonImportImage = document.createElement('button');
 			buttonImportImage.innerHTML = `<span>Import image</span> ${SVG_ICONS.upload}`;
 			buttonImportImage.addEventListener('click', _evtClickImportLibraryThumbnail.bind(this));
-			const buttonExportImage = document.createElement('button');
-			buttonExportImage.innerHTML = `<span>Save as image</span> ${SVG_ICONS.download}`;
-			buttonExportImage.addEventListener('click', _evtClickExportImage.bind(this));
 			htmlContainer.children[2].appendChild(buttonImportImage);
-			htmlContainer.children[2].appendChild(buttonExportImage);
 		} else {
 			const buttonExportImage = document.createElement('button');
 			buttonExportImage.innerHTML = `<span>Save as image</span> ${SVG_ICONS.download}`;
@@ -650,7 +648,7 @@ class AnaloguePocketLibraryThumbnails {
 
 
 const _refreshGridThumbnailPreview = function (imageData) {
-	const canvas = document.getElementById('add-thumbnail-preview');
+	const canvas = document.getElementById('canvas-thumbnail-preview');
 	canvas.width = 121;
 	canvas.height = 109;
 	const ctx=canvas.getContext('2d');
@@ -692,7 +690,7 @@ const _refreshSelectGameNames = function () {
 		filteredGames = filteredGames.filter(game => game.platform === 3);
 	} else if (/sms_/.test(currentFiles[0].name)) {
 		filteredGames = filteredGames.filter(game => game.platform === 4);
-	} else if (/ngp?_/.test(currentFiles[0].name)) {
+	} else if (/ngpc?_/.test(currentFiles[0].name)) {
 		filteredGames = filteredGames.filter(game => game.platform === 5 || game.platform === 6);
 	} else if (/tg16_/.test(currentFiles[0].name)) {
 		filteredGames = filteredGames.filter(game => game.platform === 7);
@@ -701,7 +699,7 @@ const _refreshSelectGameNames = function () {
 	}
 	//to-do: missing ws and wsc?
 
-	document.getElementById('add-thumbnail-crc32').innerHTML = '';
+	document.getElementById('select-thumbnail-crc32').innerHTML = '';
 	filteredGames.sort((a, b) => {
 		return a.title.localeCompare(b.title);
 	});
@@ -710,7 +708,7 @@ const _refreshSelectGameNames = function () {
 		option.value = game.crc32;
 		option.disabled = currentLibraryThumbnails.entries.some((entry) => entry.crc32 === game.crc32);
 		option.innerHTML = game.title;
-		document.getElementById('add-thumbnail-crc32').appendChild(option);
+		document.getElementById('select-thumbnail-crc32').appendChild(option);
 	});
 
 	return filteredGames.length;
@@ -721,12 +719,12 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 		return false;
 	}
 
-	document.getElementById('add-thumbnail-crc32').disabled=false;
-	document.getElementById('add-thumbnail-preview').width = this.width;
-	document.getElementById('add-thumbnail-preview').height = this.height;
-	document.getElementById('form-add-thumbnail-entry').reset();
-	document.getElementById('form-add-thumbnail-entry').pocketImage = null;
-	document.getElementById('dialog-add-thumbnail-entry').showModal();
+	document.getElementById('select-thumbnail-crc32').disabled=false;
+	document.getElementById('canvas-thumbnail-preview').width = 121;
+	document.getElementById('canvas-thumbnail-preview').height = 109;
+	document.getElementById('form-thumbnail').reset();
+	document.getElementById('form-thumbnail').pocketImage = null;
+	document.getElementById('dialog-thumbnail').showModal();
 };
 
 
@@ -735,13 +733,20 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 const _evtClickImportLibraryThumbnail = function (evt) {
 	_refreshSelectGameNames();
 
-	document.getElementById('add-thumbnail-crc32').disabled=true;
-	document.getElementById('add-thumbnail-crc32').value = parseInt(this.name, 16);
-	document.getElementById('add-thumbnail-preview').width = this.width;
-	document.getElementById('add-thumbnail-preview').height = this.height;
-	document.getElementById('add-thumbnail-preview').getContext('2d').putImageData(AnaloguePocketConverter.colorRawToImageData(this.rawData), 0, 0);
-	document.getElementById('form-add-thumbnail-entry').pocketImage = this;
-	document.getElementById('dialog-add-thumbnail-entry').showModal();
+	document.getElementById('select-thumbnail-crc32').disabled=true;
+	document.getElementById('select-thumbnail-crc32').value = parseInt(this.name, 16);
+	if(!document.getElementById('select-thumbnail-crc32').value){
+		const option=document.createElement('option');
+		option.value=this.name;
+		option.innerHTML=this.name;
+		document.getElementById('select-thumbnail-crc32').appendChild(option);
+		document.getElementById('select-thumbnail-crc32').value=this.name;
+	}
+	document.getElementById('canvas-thumbnail-preview').width = this.width;
+	document.getElementById('canvas-thumbnail-preview').height = this.height;
+	document.getElementById('canvas-thumbnail-preview').getContext('2d').putImageData(AnaloguePocketConverter.colorRawToImageData(this.rawData), 0, 0);
+	document.getElementById('form-thumbnail').pocketImage = this;
+	document.getElementById('dialog-thumbnail').showModal();
 };
 
 
@@ -904,7 +909,7 @@ window.addEventListener('load', function (evt) {
 
 
 
-	document.getElementById('add-thumbnail-file').addEventListener('change', function (evt) {
+	document.getElementById('file-thumbnail').addEventListener('change', function (evt) {
 		const file = this.files[0];
 		const mimeType = file.type;
 		const reader = new FileReader();
@@ -955,9 +960,9 @@ window.addEventListener('load', function (evt) {
 			reader.readAsDataURL(file);
 		};
 	});
-	document.getElementById('form-add-thumbnail-entry').addEventListener('submit', function (evt) {
+	document.getElementById('form-thumbnail').addEventListener('submit', function (evt) {
 		const currentPocketImage = this.pocketImage;
-		const canvas=document.getElementById('add-thumbnail-preview');
+		const canvas=document.getElementById('canvas-thumbnail-preview');
 		const imageData=canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
 
 		if(currentPocketImage){
@@ -968,7 +973,7 @@ window.addEventListener('load', function (evt) {
 			currentPocketImage.canvas.height = imageData.height;
 			currentPocketImage.canvas.getContext('2d').putImageData(imageData, 0, 0);
 		}else{
-			const crc32 = parseInt(document.getElementById('add-thumbnail-crc32').value);
+			const crc32 = parseInt(document.getElementById('select-thumbnail-crc32').value);
 			const currentLibraryThumbnails = currentFiles[0];
 			const newEntry = {
 				index: currentLibraryThumbnails.entries.length,
