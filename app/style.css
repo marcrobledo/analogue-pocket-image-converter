@@ -292,9 +292,9 @@ svg{
 	flex-direction: column;
 	gap:4px;
 }
-#current-library-thumbnails>div>div.item-image){
-	height:109x;
-}
+/* #current-library-thumbnails>div>div.item-image{
+	height:109px;
+} */
 #current-library-thumbnails>div>div.item-buttons{
 	display:flex;
 	gap:4px;
@@ -314,7 +314,11 @@ svg{
 }
 
 
-
+#add-thumbnail-preview{
+	margin: 0 auto;
+	background-color:black;
+	padding: 9px 12px 10px 11px;
+}
 
 
 

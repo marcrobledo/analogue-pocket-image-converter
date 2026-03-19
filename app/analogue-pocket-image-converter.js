@@ -59,6 +59,9 @@ webWorkerImageResizer.onmessage = (event) => { // listen for events from the wor
 		pocketImage.canvas.width = pocketImageDownscaled.width;
 		pocketImage.canvas.height = pocketImageDownscaled.height;
 		pocketImage.canvas.getContext('2d').putImageData(imageDataDownscaled, 0, 0);
+	}else if(responseParameters.callbackId === 'replaceGridThumbnailPreview') {
+		_refreshGridThumbnailPreview(imageDataDownscaled);
+
 	}
 
 };
@@ -646,8 +649,39 @@ class AnaloguePocketLibraryThumbnails {
 
 
 
+const _refreshGridThumbnailPreview = function (imageData) {
+	const canvas = document.getElementById('add-thumbnail-preview');
+	canvas.width = 121;
+	canvas.height = 109;
+	const ctx=canvas.getContext('2d');
+	if(imageData.width === 121 && imageData.height === 109){
+		ctx.putImageData(imageData, 0, 0);
+	}else{
+		const centerX = (121 - imageData.width) / 2;
+		const centerY = (109 - imageData.height) / 2;
+		const borderHorizontal = new ImageData(imageData.width + 2, 1);
+		for(var x=0; x<borderHorizontal.width * 4; x+=4){
+			borderHorizontal.data[x + 0] = 255;
+			borderHorizontal.data[x + 1] = 255;
+			borderHorizontal.data[x + 2] = 255;
+			borderHorizontal.data[x + 3] = 255;
+		}
+		const borderVertical = new ImageData(1, imageData.height + 2);
+		for(var y=0; y<borderVertical.height * 4; y++){
+			borderVertical.data[y * 4 + 0] = 255;
+			borderVertical.data[y * 4 + 1] = 255;
+			borderVertical.data[y * 4 + 2] = 255;
+			borderVertical.data[y * 4 + 3] = 255;
+		}
 
-const _evtClickAddLibraryThumbnailEntry = function (evt) {
+		ctx.putImageData(borderHorizontal, centerX - 1, centerY - 1);
+		ctx.putImageData(borderHorizontal, centerX - 1, centerY + imageData.height);
+		ctx.putImageData(borderVertical, centerX - 1, centerY - 1);
+		ctx.putImageData(borderVertical, centerX + imageData.width, centerY - 1);
+		ctx.putImageData(imageData, centerX, centerY);
+	}
+}
+const _refreshSelectGameNames = function () {
 	let filteredGames = appSettings.getAllGames();
 
 	if (/gb_/.test(currentFiles[0].name)) {
@@ -667,13 +701,6 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 	}
 	//to-do: missing ws and wsc?
 
-	if (!filteredGames.length) {
-		alert('Import your list.bin file to be able to add new library thumbnails');
-		return false;
-	}
-
-
-	const currentLibraryThumbnails = this;
 	document.getElementById('add-thumbnail-crc32').innerHTML = '';
 	filteredGames.sort((a, b) => {
 		return a.title.localeCompare(b.title);
@@ -686,8 +713,19 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 		document.getElementById('add-thumbnail-crc32').appendChild(option);
 	});
 
+	return filteredGames.length;
+}
+const _evtClickAddLibraryThumbnailEntry = function (evt) {
+	if (!_refreshSelectGameNames()) {
+		alert('Import your list.bin file to be able to add new library thumbnails');
+		return false;
+	}
 
+	document.getElementById('add-thumbnail-crc32').disabled=false;
+	document.getElementById('add-thumbnail-preview').width = this.width;
+	document.getElementById('add-thumbnail-preview').height = this.height;
 	document.getElementById('form-add-thumbnail-entry').reset();
+	document.getElementById('form-add-thumbnail-entry').pocketImage = null;
 	document.getElementById('dialog-add-thumbnail-entry').showModal();
 };
 
@@ -695,8 +733,15 @@ const _evtClickAddLibraryThumbnailEntry = function (evt) {
 
 
 const _evtClickImportLibraryThumbnail = function (evt) {
-	document.getElementById('input-file-thumbnail').pocketImage = this;
-	document.getElementById('input-file-thumbnail').click();
+	_refreshSelectGameNames();
+
+	document.getElementById('add-thumbnail-crc32').disabled=true;
+	document.getElementById('add-thumbnail-crc32').value = parseInt(this.name, 16);
+	document.getElementById('add-thumbnail-preview').width = this.width;
+	document.getElementById('add-thumbnail-preview').height = this.height;
+	document.getElementById('add-thumbnail-preview').getContext('2d').putImageData(AnaloguePocketConverter.colorRawToImageData(this.rawData), 0, 0);
+	document.getElementById('form-add-thumbnail-entry').pocketImage = this;
+	document.getElementById('dialog-add-thumbnail-entry').showModal();
 };
 
 
@@ -856,64 +901,85 @@ window.addEventListener('load', function (evt) {
 		}
 	});
 
-	document.getElementById('input-file-thumbnail').addEventListener('change', function (evt) {
+
+
+
+	document.getElementById('add-thumbnail-file').addEventListener('change', function (evt) {
 		const file = this.files[0];
-		const mimeType = file.type;
-		if (REGEX_IMAGE_MIMETYPE.test(mimeType)) {
-			const currentLibraryThumbnails = currentFiles[0];
-			const currentPocketImage = this.pocketImage;
-
-			const reader = new FileReader();
-			reader.onload = function (evt) {
-				const img = new Image();
-				img.onload = function () {
-					const newPocketImage = AnaloguePocketImage.fromImage(currentPocketImage.name, this, currentLibraryThumbnails);
-					currentPocketImage.width = newPocketImage.width;
-					currentPocketImage.height = newPocketImage.height;
-					currentPocketImage.rawData = newPocketImage.rawData;
-
-
-					const imageData = AnaloguePocketConverter.colorRawToImageData(newPocketImage.rawData);
-
-					currentPocketImage.canvas.width = newPocketImage.width;
-					currentPocketImage.canvas.height = newPocketImage.height;
-					currentPocketImage.canvas.getContext('2d').putImageData(imageData, 0, 0);
-				};
-				img.src = evt.target.result;
-			};
-			reader.readAsDataURL(file);
-		} else {
-			alert('Invalid thumbnail image');
-		}
-	});
-
-
-	document.getElementById('form-add-thumbnail-entry').addEventListener('submit', function (evt) {
-		const crc32 = parseInt(document.getElementById('add-thumbnail-crc32').value);
-		const currentLibraryThumbnails = currentFiles[0];
-
-		const file = document.getElementById('add-thumbnail-file').files[0];
-		const fileName = crc32.toString(16).padStart(8, '0');
 		const mimeType = file.type;
 		const reader = new FileReader();
 		if (REGEX_IMAGE_MIMETYPE.test(mimeType)) {
 			reader.onload = function (evt) {
 				const img = new Image();
 				img.onload = function () {
-					const newEntry = {
-						index: currentLibraryThumbnails.entries.length,
+					/* library grid thumbnail/screenshot */
+					const maxWidth = 121 - 2;
+					const maxHeight = 109 - 2;
+					const downscale = img.width > maxWidth || img.height > maxHeight;
+					let finalWidth, finalHeight;
+					if (!downscale) {
+						finalWidth = img.width;
+						finalHeight = img.height;
+					} else {
+						/* downscale */
+						const widthRatio = maxWidth / img.width;
+						const heightRatio = maxHeight / img.height;
+						const scale = Math.min(widthRatio, heightRatio);
+						finalWidth = Math.round(img.width * scale);
+						finalHeight = Math.round(img.height * scale);
+					}
 
-						crc32,
-						//offset:null,
-						pocketImage: AnaloguePocketImage.fromImage(fileName, this, currentLibraryThumbnails)
-					};
-					currentLibraryThumbnails.entries.push(newEntry);
-					document.getElementById('current-library-thumbnails').appendChild(newEntry.pocketImage.htmlContainer);
+					const tempCanvas=new OffscreenCanvas(maxWidth, maxHeight);
+					const tempCtx=tempCanvas.getContext('2d');
+					tempCtx.drawImage(img, 0, 0, finalWidth, finalHeight);
+					_refreshGridThumbnailPreview(tempCtx.getImageData(0, 0, finalWidth, finalHeight));
+					
+					/* resize with bilinear filter */
+					if(downscale){
+						tempCanvas.width = img.width;
+						tempCanvas.height = img.height;
+						tempCtx.drawImage(img, 0, 0);
+						const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+						webWorkerImageResizer.postMessage({
+							imageData: imageData,
+							maxWidth: maxWidth,
+							maxHeight: maxHeight,
+							responseParameters: {
+								callbackId: 'replaceGridThumbnailPreview'
+							}
+						});
+					}
 				};
 				img.src = evt.target.result;
 			};
 			reader.readAsDataURL(file);
 		};
+	});
+	document.getElementById('form-add-thumbnail-entry').addEventListener('submit', function (evt) {
+		const currentPocketImage = this.pocketImage;
+		const canvas=document.getElementById('add-thumbnail-preview');
+		const imageData=canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+
+		if(currentPocketImage){
+			currentPocketImage.rawData = AnaloguePocketConverter.imageDataToColorRaw(imageData);
+			currentPocketImage.width = imageData.width;
+			currentPocketImage.height = imageData.height;
+			currentPocketImage.canvas.width = imageData.width;
+			currentPocketImage.canvas.height = imageData.height;
+			currentPocketImage.canvas.getContext('2d').putImageData(imageData, 0, 0);
+		}else{
+			const crc32 = parseInt(document.getElementById('add-thumbnail-crc32').value);
+			const currentLibraryThumbnails = currentFiles[0];
+			const newEntry = {
+				index: currentLibraryThumbnails.entries.length,
+
+				crc32,
+				//offset:null,
+				pocketImage: new AnaloguePocketImage(crc32.toString(16).padStart(8, '0'), AnaloguePocketConverter.imageDataToColorRaw(imageData), currentLibraryThumbnails)
+			};
+			currentLibraryThumbnails.entries.push(newEntry);
+			document.getElementById('current-library-thumbnails').appendChild(newEntry.pocketImage.htmlContainer);
+		}
 	});
 
 
