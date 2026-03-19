@@ -32,6 +32,52 @@ const SVG_ICONS = {};
 
 const REGEX_IMAGE_MIMETYPE = /^image\/(png|jpeg|gif|webp)$/i;
 
+/* web workers */
+const webWorkerImageResizer = new Worker('./app/image-resizer.webworker.js');
+webWorkerImageResizer.onmessage = (event) => { // listen for events from the worker
+	const imageDataDownscaled=event.data.imageDataDownscaled;
+	const responseParameters=event.data.responseParameters;
+	if(responseParameters.callbackId === 'replaceImageRawData') {
+		const rawData = AnaloguePocketConverter.imageDataToColorRaw(imageDataDownscaled);
+
+		let pocketImage;
+		if(responseParameters.library){
+			pocketImage=currentFiles[0].entries.find((file) => file instanceof AnaloguePocketImage && file.uid === responseParameters.uid);
+		}else{
+			pocketImage=currentFiles.find((file) => file instanceof AnaloguePocketImage && file.uid === responseParameters.uid);
+		}
+		if(!pocketImage){
+			alert('failed to find image to replace data');
+			throw new Error('failed to find image to replace data');
+		}
+		const pocketImageDownscaled = new AnaloguePocketImage(pocketImage.name, rawData, pocketImage.library);
+
+		pocketImage.width = pocketImageDownscaled.width;
+		pocketImage.height = pocketImageDownscaled.height;
+		pocketImage.rawData = pocketImageDownscaled.rawData;
+
+		pocketImage.canvas.width = pocketImageDownscaled.width;
+		pocketImage.canvas.height = pocketImageDownscaled.height;
+		pocketImage.canvas.getContext('2d').putImageData(imageDataDownscaled, 0, 0);
+	}
+
+};
+webWorkerImageResizer.onerror = (event) => { // listen for exceptions from the worker
+	alert('image resizer webworker error', 'danger');
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const appSettings = (function () {
 	const LOCAL_STORAGE_KEY = 'analogue-pocket-image-converter-settings';
@@ -248,6 +294,12 @@ const _evtClickExportImageAsBin = function (evt) {
 	_saveAs(this.name + '.bin', this.rawData);
 };
 class AnaloguePocketImage {
+	static nextUniqueId = 0;
+	static getNextUid() {
+		return AnaloguePocketImage.nextUniqueId++;
+	}
+
+	uid;
 	name;
 	canvas;
 	width;
@@ -262,10 +314,8 @@ class AnaloguePocketImage {
 		if (!(rawData instanceof ArrayBuffer))
 			throw new TypeError('rawData must be a ArrayBuffer');
 
-		this.name = name;
-		this.rawData = rawData;
-		this.canvas = document.createElement('canvas');
 
+		this.rawData = rawData;
 		/* convert to image */
 		let imageData;
 		if ((rawData.byteLength % 4 === 0) && (new Uint32Array(rawData))[0] === 0x41504920)
@@ -277,8 +327,14 @@ class AnaloguePocketImage {
 		else
 			throw new Error('invalid image raw data');
 
+
+
+		this.uid = AnaloguePocketImage.getNextUid();
+		this.name = name;
+
 		this.width = imageData.width;
 		this.height = imageData.height;
+		this.canvas = document.createElement('canvas');
 		this.canvas.width = this.width;
 		this.canvas.height = this.height;
 		this.canvas.getContext('2d').putImageData(imageData, 0, 0);
@@ -387,16 +443,15 @@ class AnaloguePocketImage {
 	}
 
 	static fromImage(fileName, image, library) {
-		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
 
 		if (
 			(image.width === 521 && image.height === 165) ||
 			(image.width === 36 && image.height === 36)
 		) {
 			/* dev icon or core banner */
-			canvas.width = image.width;
-			canvas.height = image.height;
+			const canvas = new OffscreenCanvas(image.width, image.height);
+			const ctx = canvas.getContext('2d');
+
 			ctx.drawImage(image, 0, 0);
 			/* convert to grayscale */
 			const imageData = ctx.getImageData(0, 0, image.width, image.height);
@@ -417,8 +472,9 @@ class AnaloguePocketImage {
 			/* library grid thumbnail/screenshot */
 			const maxWidth = library ? 121 : 344;
 			const maxHeight = library ? 109 : 172;
+			const downscale = image.width > maxWidth || image.height > maxHeight;
 			let finalWidth, finalHeight;
-			if (image.width <= maxWidth && image.height <= maxHeight) {
+			if (!downscale) {
 				finalWidth = image.width;
 				finalHeight = image.height;
 			} else {
@@ -430,14 +486,35 @@ class AnaloguePocketImage {
 				finalHeight = Math.round(image.height * scale);
 			}
 
-			canvas.width = finalWidth;
-			canvas.height = finalHeight;
+			const canvas = new OffscreenCanvas(finalWidth, finalHeight);
+			const ctx=canvas.getContext('2d');
 			ctx.drawImage(image, 0, 0, finalWidth, finalHeight);
 			const imageData = ctx.getImageData(0, 0, finalWidth, finalHeight);
-
-			/* convert image to AP image data */
 			const rawData = AnaloguePocketConverter.imageDataToColorRaw(imageData);
-			return new AnaloguePocketImage(fileName, rawData, library);
+			const pocketImage = new AnaloguePocketImage(fileName, rawData, library);
+			/* resize with bilinear filter */
+			if(downscale){
+				if(!library){
+					const originalCanvas=new OffscreenCanvas(image.width, image.height);
+					const originalCtx=originalCanvas.getContext('2d');
+					originalCtx.drawImage(image, 0, 0);
+					const originalImageData=originalCtx.getImageData(0, 0, image.width, image.height);
+					webWorkerImageResizer.postMessage({
+						imageData: originalImageData,
+						maxWidth: maxWidth,
+						maxHeight: maxHeight,
+						responseParameters: {
+							callbackId: 'replaceImageRawData',
+							library: !!library,
+							uid: library? null : pocketImage.uid //to-do
+						}
+					});
+				}else{
+					/* skip for now */
+				}
+			}
+
+			return pocketImage;
 		}
 	}
 }
