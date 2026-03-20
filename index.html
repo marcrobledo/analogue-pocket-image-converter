@@ -9,6 +9,7 @@
 	<link rel="shortcut icon" href="./app/favicon192.png" type="image/png" sizes="192x192"/>
 	<link type="text/css" rel="stylesheet" href="app/style.css" media="all" />
 	<script src="app/analogue-pocket-image-converter.js"></script>
+	<script src="app/attach-files.min.js"></script>
 
 	<!-- social network metatags -->	
 	<meta name="twitter:site" content="@marc_robledo">
@@ -94,12 +95,26 @@
 	<dialog id="dialog-thumbnail">
 		<form id="form-thumbnail" method="dialog">
 			<div class="row-form">
+				<label>Id:</label>
+				<span id="span-thumbnail-crc32" class="mono"></span>
+			</div>
+			<div class="row-form">
 				<label for="select-thumbnail-crc32">Game:</label>
 				<select id="select-thumbnail-crc32" name="crc32" required autofocus></select>
 			</div>
 			<div class="row-form">
-				<label for="file-thumbnail">Thumbnail image:</label><br/>
-				<input id="file-thumbnail" type="file" name="file" required accept="image/*" />
+				<label>Thumbnail image:</label>
+				<div>
+					<button id="btn-pick-thumbnail" type="button">
+						<svg id="svg-upload" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Z"></path><path d="M11.78 4.72a.749.749 0 1 1-1.06 1.06L8.75 3.811V9.5a.75.75 0 0 1-1.5 0V3.811L5.28 5.78a.749.749 0 1 1-1.06-1.06l3.25-3.25a.749.749 0 0 1 1.06 0l3.25 3.25Z"></path></svg> <span>Import image</span>
+					</button>
+				</div>
+			</div>
+			<div class="row-form">
+				<label></label>
+				<div class="text-muted text-small text-italic">
+					(you can also drag and drop or paste from clipboard)
+				</div>
 			</div>
 			<!-- <div class="row-form">
 				(alternatively, you can drag and drop an image file or paste directly from clipboard)
@@ -112,6 +127,14 @@
 				<button type="submit">Accept</button>
 			</div>
 		</form>
+	</dialog>
+
+
+	<dialog id="dialog-export-database">
+		<textarea id="textarea-export-database" cols="120" rows="20" readonly></textarea>
+		<div class="text-center">
+			<button type="button" onclick="this.parentElement.parentElement.close()">Close</button>
+		</div>
 	</dialog>
 	<div hidden>
 		<svg id="svg-plus-circle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0M1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0m7.25-3.25v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5a.75.75 0 0 1 1.5 0"/></svg>

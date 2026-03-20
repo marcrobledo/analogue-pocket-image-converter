@@ -45,6 +45,8 @@ body{
 .text-center{text-align:center}
 .text-right{text-align:right}
 .text-strong{font-weight:bold}
+.text-small{font-size: 90%;}
+.text-italic{font-style: italic;}
 .text-muted{color:var(--color-muted);}
 .text-danger{color:var(--color-danger) !important}
 .clickable:hover{cursor:pointer}
